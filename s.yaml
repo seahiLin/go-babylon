@@ -10,7 +10,7 @@ services:
     component: fc
     actions:
       pre-deploy:
-        - run: npm run build
+        - run: npm install && npm run build
           path: ./code/view
         - run: go mod tidy
           path: ./code
