@@ -10,6 +10,8 @@ services:
     component: fc
     actions:
       pre-deploy:
+        - run: npm run build
+          path: ./code/view
         - run: go mod tidy
           path: ./code
         - run: GO111MODULE=on GOOS=linux CGO_ENABLED=0 go build -o target/main main.go

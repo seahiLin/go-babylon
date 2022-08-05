@@ -8,11 +8,10 @@ import (
 
 func main() {
 	router := gin.Default()
-	router.LoadHTMLGlob("templates/*")
+	router.LoadHTMLFiles("./view/out/index.html")
+	router.Static("/views", "./view/out")
 	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"app": "Gin",
-		})
+		c.HTML(http.StatusOK, "index.html", nil)
 	})
 	router.Run(":9000")
 }
