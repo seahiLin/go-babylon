@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import * as BABYLON from "@babylonjs/core";
+import RTC from "../models/webrtc";
 
 import styles from "./index.module.scss";
 
@@ -7,6 +8,8 @@ const Cam = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    const rtc = new RTC();
+    rtc.connect();
     const videoElem = document.createElement("video");
 
     navigator.mediaDevices
@@ -94,7 +97,7 @@ const Cam = () => {
         console.log(ANote0VideoVidTex.video.paused ? "paused" : "playing");
       }
     }, BABYLON.PointerEventTypes.POINTERPICK);
-    
+
     return scene;
   };
 

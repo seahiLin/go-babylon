@@ -3,8 +3,9 @@ package main
 import (
 	"net/http"
 
+	"gintest/libs/controllers/rtc"
+
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 )
 
 func main() {
@@ -12,24 +13,9 @@ func main() {
 
 	serveStaticResources(router)
 
-	router.GET("/signal", signalHandler)
+	rtc.InitRoute(router)
 
 	router.Run(":9000")
-}
-
-var upGrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
-func signalHandler(c *gin.Context) {
-	ws, err := upGrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		return
-	}
-	defer ws.Close()
-
 }
 
 func serveStaticResources(router *gin.Engine) {

@@ -5,7 +5,7 @@ class RTC {
 
   public async connect() {
     return new Promise((resolve, reject) => {
-      const signalingChannel = new WebSocket('ws://localhost:9000/signal');
+      const signalingChannel = new WebSocket('ws://localhost:9000/rtc/signal');
 
       const configuration = {
         iceServers: [
@@ -14,22 +14,33 @@ class RTC {
           },
         ],
       };
-      const peerConnection = new RTCPeerConnection(configuration);
-      peerConnection.onicecandidate = (event) => {
+      console.log(11)
+      signalingChannel.onopen = () => {
         signalingChannel.send(JSON.stringify({
-          type: 'candidate',
-          data: event.candidate,
+          type: 'offer',
+          sdp: '',
         }));
       };
-      peerConnection.oniceconnectionstatechange = (event) => {
-        console.log(event.target.iceConnectionState);
+      const peerConnection = new RTCPeerConnection(configuration);
+      peerConnection.onicecandidate = (event) => {
+        console.log(event)
+        signalingChannel.onopen = () => {
+          console.log('signaling channel open');
+          signalingChannel.send(JSON.stringify({
+            type: 'candidate',
+            data: event.candidate,
+          }));
+        }
       };
-      peerConnection.onnegotiationneeded = (event) => {
-        console.log(event);
-      }
-      peerConnection.onconnectionstatechange = (event) => {
-        console.log(event.target.connectionState);
-      }
+      // peerConnection.oniceconnectionstatechange = (event) => {
+      //   console.log(event.target.iceConnectionState);
+      // };
+      // peerConnection.onnegotiationneeded = (event) => {
+      //   console.log(event);
+      // }
+      // peerConnection.onconnectionstatechange = (event) => {
+      //   console.log(event.target.connectionState);
+      // }
     });
   }
 }
