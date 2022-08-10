@@ -32,6 +32,8 @@ const Cam = () => {
 
         const scene = createScene(engine, canvas, videoElem);
 
+        const outputStream = canvas.captureStream()
+
         engine.runRenderLoop(() => {
           scene.render();
         });
