@@ -6,10 +6,15 @@ import styles from "./index.module.scss";
 
 const Cam = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const rtcRef = useRef<RTC>(null);
 
   useEffect(() => {
-    const rtc = new RTC();
-    rtc.connect();
+    renderCam()
+    initRtc()
+  }, []);
+
+  const renderCam = () => {
     const videoElem = document.createElement("video");
 
     navigator.mediaDevices
@@ -35,8 +40,6 @@ const Cam = () => {
 
         const scene = createScene(engine, canvas, videoElem);
 
-        const outputStream = canvas.captureStream()
-
         engine.runRenderLoop(() => {
           scene.render();
         });
@@ -48,7 +51,7 @@ const Cam = () => {
       .catch((err) => {
         console.error(err);
       });
-  }, []);
+  }
 
   const createScene = (engine, canvas, videoElem) => {
     // This creates a basic Babylon Scene object (non-mesh)
@@ -101,9 +104,29 @@ const Cam = () => {
     return scene;
   };
 
+  const initRtc = async() => {
+    const rtc = new RTC();
+    const connection = await rtc.connect();
+    connection.ontrack = (event) => {
+      const video = videoRef.current;
+      video.srcObject = event.streams[0];
+      video.play();
+    }
+    const canvas = canvasRef.current;
+    const stream = canvas.captureStream();
+    connection.addTrack(stream.getVideoTracks()[0]);
+    rtcRef.current = rtc;
+  }
+
+  const makeCall = () => {
+    rtcRef.current?.sendOffer();
+  }
+
   return (
     <div>
       <canvas className={styles.canvas} ref={canvasRef}></canvas>
+      <video className={styles.video} ref={videoRef}></video>
+      <div className={styles.call} onClick={makeCall}>call</div>
     </div>
   );
 };

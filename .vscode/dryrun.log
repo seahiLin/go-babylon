@@ -1,0 +1,6 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory `/Users/admin/code/serverless/start-gin-xe4u'
+make: Leaving directory `/Users/admin/code/serverless/start-gin-xe4u'
+ 
+make: *** No targets specified and no makefile found.  Stop.
+

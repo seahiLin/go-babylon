@@ -1,47 +1,71 @@
 class RTC {
-  constructor() {
+  peerConnection: RTCPeerConnection;
+  signalingChannel: WebSocket;
 
-  }
+  constructor() {}
 
   public async connect() {
-    return new Promise((resolve, reject) => {
-      const signalingChannel = new WebSocket('ws://localhost:9000/rtc/signal');
-
-      const configuration = {
-        iceServers: [
-          {
-            urls: 'stun:stun.l.google.com:19302',
-          },
-        ],
-      };
-      console.log(11)
-      signalingChannel.onopen = () => {
-        signalingChannel.send(JSON.stringify({
-          type: 'offer',
-          sdp: '',
-        }));
-      };
-      const peerConnection = new RTCPeerConnection(configuration);
+    const signalingChannel = this.signalingChannel = new WebSocket(
+      "ws://localhost:9000/rtc/signal"
+    );
+    const configuration = {
+      iceServers: [
+        {
+          urls: "stun:stun.l.google.com:19302",
+        },
+      ],
+    };
+    const peerConnection = this.peerConnection = new RTCPeerConnection(configuration);
+    
+    signalingChannel.onopen = async () => {
       peerConnection.onicecandidate = (event) => {
-        console.log(event)
-        signalingChannel.onopen = () => {
-          console.log('signaling channel open');
-          signalingChannel.send(JSON.stringify({
-            type: 'candidate',
+        signalingChannel.send(
+          JSON.stringify({
+            type: "candidate",
+            room: "test",
             data: event.candidate,
-          }));
+          })
+        );
+      };
+
+      signalingChannel.onmessage = async (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === "offer") {
+          peerConnection.setRemoteDescription(
+            new RTCSessionDescription(data.data)
+          );
+          const answer = await peerConnection.createAnswer();
+          peerConnection.setLocalDescription(answer);
+          signalingChannel.send(
+            JSON.stringify({
+              type: "answer",
+              room: "test",
+              data: answer,
+            })
+          );
+        } else if (data.type === "answer") {
+          peerConnection.setRemoteDescription(
+            new RTCSessionDescription(data.data)
+          );
+        } else if (data.type === "candidate") {
+          peerConnection.addIceCandidate(new RTCIceCandidate(data.data));
         }
       };
-      // peerConnection.oniceconnectionstatechange = (event) => {
-      //   console.log(event.target.iceConnectionState);
-      // };
-      // peerConnection.onnegotiationneeded = (event) => {
-      //   console.log(event);
-      // }
-      // peerConnection.onconnectionstatechange = (event) => {
-      //   console.log(event.target.connectionState);
-      // }
-    });
+    };
+
+    return peerConnection;
+  }
+
+  public async sendOffer() {
+    const offer = await this.peerConnection.createOffer();
+    this.peerConnection.setLocalDescription(offer);
+    await this.signalingChannel.send(
+      JSON.stringify({
+        type: "offer",
+        room: "test",
+        data: offer,
+      })
+    );
   }
 }
 

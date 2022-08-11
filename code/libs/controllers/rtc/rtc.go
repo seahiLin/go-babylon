@@ -1,7 +1,7 @@
 package rtc
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -19,6 +19,19 @@ var upGrader = websocket.Upgrader{
 	},
 }
 
+type Message struct {
+	Type string `json:"type"`
+	Room string `json:"room"`
+	Data string `json:"data"`
+}
+
+type Candidate struct {
+	Data string
+	Chan chan string
+}
+
+var CandidateForRoom = make(map[string]Candidate)
+
 func signalHandler(c *gin.Context) {
 	ws, err := upGrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -26,12 +39,36 @@ func signalHandler(c *gin.Context) {
 	}
 	defer ws.Close()
 
-	json := make(chan []byte)
-	ws.ReadJSON(json)
-
 	for {
-		msg := <-json
-		fmt.Println(string(msg))
-		ws.WriteJSON(msg)
+		_, message, err := ws.ReadMessage()
+		if err != nil {
+			break
+		}
+
+		var msg Message
+		err = json.Unmarshal(message, &msg)
+		if err != nil {
+			break
+		}
+
+		if candidate, exist := CandidateForRoom[msg.Room]; exist {
+			candidate.Chan <- string(message)
+
+			ws.WriteMessage(websocket.TextMessage, []byte(candidate.Data))
+		} else {
+			go func() {
+				candidateChan := make(chan string)
+				CandidateForRoom[msg.Room] = Candidate{
+					Data: string(message),
+					Chan: candidateChan,
+				}
+				data := <-candidateChan
+				ws.WriteJSON(Message{
+					Type: "candidate",
+					Data: data,
+				})
+			}()
+		}
+
 	}
 }
